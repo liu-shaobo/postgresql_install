@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# v 0.4:
+#    Merge postgresql.conf and pg_hba.conf to pg_*_install.sh (2016-09-29)
+#
 # v 0.3:  
 #    Merge pg_*_slave_install.sh to pg_*_install.sh (2016-05-26)
 #
@@ -16,7 +19,7 @@ if [ "$#" -ne "2" ] ; then
 fi
 
 pg_data_dir="/data/pgsql/"$2"/data"
-pg_data_dir="/data/pgsql/"$2"/data"
+pg_sock_dir="/var/run/postgresql"
 
 if [ "$2" = "9.3" ] ; then
   ## create psql repo
@@ -42,9 +45,14 @@ if [ "$2" = "9.3" ] ; then
     ## init db for centos-7.x
     /usr/pgsql-"$2"/bin/postgresql93-setup initdb
     
-    ## copy pg file
-    cp ./postgresql_master.conf $pg_data_dir/postgresql.conf && chown postgres.postgres $pg_data_dir/postgresql.conf
-    cp ./pg_hba.conf /$pg_data_dir/ && chown postgres.postgres $pg_data_dir/pg_hba.conf
+    ## create pg file
+    echo -e "listen_addresses = '*'\nmax_connections = 100\nshared_buffers = 128MB\nwork_mem = 4MB\nmaintenance_work_mem = 64MB\neffective_io_concurrency = 10\nwal_level = hot_standby\nfsync = off\nmax_wal_senders = 10\nwal_keep_segments = 64\nwal_sender_timeout = 60s\nlog_destination = 'csvlog'\nlogging_collector = on\nlog_directory = 'pg_log'\nlog_filename = 'postgresql-%Y-%m-%d.log'\nlog_truncate_on_rotation = on\nlog_rotation_age = 1d\nlog_rotation_size = 0\nlog_min_duration_statement = 1s\nlog_line_prefix = '< %m >'\nlog_statement = 'all'\nlog_timezone = 'PRC'\ndatestyle = 'iso, mdy'\ntimezone = 'PRC'\nlc_messages = 'en_US.UTF-8'\nlc_monetary = 'en_US.UTF-8'\nlc_numeric = 'en_US.UTF-8'\nlc_time = 'en_US.UTF-8'\ndefault_text_search_config = 'pg_catalog.english'" > $pg_data_dir/postgresql.conf
+
+    ## create access authentication file
+    echo "local   all             all                             trust" > $pg_data_dir/pg_hba.conf
+    read -p "please input cidr address,Examples: (192.168.1.0/24) : " cidr_address
+    echo -e "host    all             all             $cidr_address    md5" >> $pg_data_dir/pg_hba.conf
+    echo -e "host    replication     all             $cidr_address    md5" >> $pg_data_dir/pg_hba.conf
     
     ## start service for centos-7.x
     systemctl enable postgresql-"$2"
@@ -56,12 +64,17 @@ if [ "$2" = "9.3" ] ; then
   elif [ "$1" = "slave" ] ; then
     ## postgresql base backup
     echo please input psql master ip :
-    read ip
-    su - postgres -c "/usr/pgsql-"$2"/bin/pg_basebackup -D /data/pgsql/"$2"/data/ -Fp -Xs -v -P -R -h $ip -U repl -p 5432"
+    read master_ip
+    su - postgres -c "/usr/pgsql-"$2"/bin/pg_basebackup -D /data/pgsql/"$2"/data/ -Fp -Xs -v -P -R -h $master_ip -U repl -p 5432"
   
-    ## copy pg file
-    cp ./postgresql_slave.conf $pg_data_dir/postgresql.conf && chown postgres.postgres $pg_data_dir/postgresql.conf
-    cp ./pg_hba.conf $pg_data_dir/ && chown postgres.postgres $pg_data_dir/pg_hba.conf
+    ## create pg file
+    echo -e "listen_addresses = '*'\nmax_connections = 200\nshared_buffers = 128MB\nwork_mem = 4MB\nmaintenance_work_mem = 64MB\neffective_io_concurrency = 10\nwal_level = hot_standby\nfsync = off\nmax_wal_senders = 10\nwal_keep_segments = 64\nwal_sender_timeout = 60s\nhot_standby = on\nlog_destination = 'csvlog'\nlogging_collector = on\nlog_directory = 'pg_log'\nlog_filename = 'postgresql-%Y-%m-%d.log'\nlog_truncate_on_rotation = on\nlog_rotation_age = 1d\nlog_rotation_size = 0\nlog_min_duration_statement = 1s\nlog_line_prefix = '< %m >'\nlog_statement = 'all'\nlog_timezone = 'PRC'\ndatestyle = 'iso, mdy'\ntimezone = 'PRC'\nlc_messages = 'en_US.UTF-8'\nlc_monetary = 'en_US.UTF-8'\nlc_numeric = 'en_US.UTF-8'\nlc_time = 'en_US.UTF-8'\ndefault_text_search_config = 'pg_catalog.english'" > $pg_data_dir/postgresql.conf
+
+    ## create access authentication file
+    echo "local   all             all                             trust" > $pg_data_dir/pg_hba.conf
+    read -p "please input cidr address,Examples: (192.168.1.0/24) : " cidr_address
+    echo -e "host    all             all             $cidr_address    md5" >> $pg_data_dir/pg_hba.conf
+    echo -e "host    replication     all             $cidr_address    md5" >> $pg_data_dir/pg_hba.conf
   
     ## start service for centos-7.x
     systemctl enable postgresql-"$2"
@@ -92,10 +105,16 @@ elif [ "$2" = "9.4" ] ; then
     ## init db for centos-7.x
     /usr/pgsql-"$2"/bin/postgresql94-setup initdb
   
-    ## copy pg file
-    cp ./postgresql_master.conf $pg_data_dir/postgresql.conf && chown postgres.postgres $pg_data_dir/postgresql.conf
+    ## create pg file
+    echo -e "listen_addresses = '*'\nmax_connections = 200\nshared_buffers = 128MB\nwork_mem = 4MB\nmaintenance_work_mem = 64MB\neffective_io_concurrency = 10\nwal_level = hot_standby\nfsync = off\nmax_wal_senders = 10\nwal_keep_segments = 64\nwal_sender_timeout = 60s\nhot_standby = on\nlog_destination = 'csvlog'\nlogging_collector = on\nlog_directory = 'pg_log'\nlog_filename = 'postgresql-%Y-%m-%d.log'\nlog_truncate_on_rotation = on\nlog_rotation_age = 1d\nlog_rotation_size = 0\nlog_min_duration_statement = 1s\nlog_line_prefix = '< %m >'\nlog_statement = 'all'\nlog_timezone = 'PRC'\ndatestyle = 'iso, mdy'\ntimezone = 'PRC'\nlc_messages = 'en_US.UTF-8'\nlc_monetary = 'en_US.UTF-8'\nlc_numeric = 'en_US.UTF-8'\nlc_time = 'en_US.UTF-8'\ndefault_text_search_config = 'pg_catalog.english'" > $pg_data_dir/postgresql.conf
+
     #echo "unix_socket_directories = '/var/run/postgresql, /tmp'" >> $pg_data_dir/postgresql.conf
-    cp ./pg_hba.conf /$pg_data_dir/ && chown postgres.postgres $pg_data_dir/pg_hba.conf
+    ## create access authentication file
+    echo "local   all             all                             trust" > $pg_data_dir/pg_hba.conf
+    read -p "please input cidr address,Examples: (192.168.1.0/24) : " cidr_address
+    echo -e "host    all             all             $cidr_address    md5" >> $pg_data_dir/pg_hba.conf
+    echo -e "host    replication     all             $cidr_address    md5" >> $pg_data_dir/pg_hba.conf
+
     if [ ! -d $pg_sock_dir ] ; then
       mkdir -p $pg_sock_dir
       chown -R postgres.postgres $pg_sock_dir
@@ -111,13 +130,18 @@ elif [ "$2" = "9.4" ] ; then
   elif [ "$1" = "slave" ] ; then
     ## postgresql base backup
     echo please input psql master ip :
-    read ip
-    su - postgres -c "/usr/pgsql-"$2"/bin/pg_basebackup -D /data/pgsql/"$2"/data/ -Fp -Xs -v -P -R -h $ip -U repl -p 5432"
+    read master_ip
+    su - postgres -c "/usr/pgsql-"$2"/bin/pg_basebackup -D /data/pgsql/"$2"/data/ -Fp -Xs -v -P -R -h $master_ip -U repl -p 5432"
   
-    ## copy pg file
-    cp ./postgresql_slave.conf $pg_data_dir/postgresql.conf && chown postgres.postgres $pg_data_dir/postgresql.conf
+    ## copyte pg file
+    echo -e "listen_addresses = '*'\nmax_connections = 200\nshared_buffers = 128MB\nwork_mem = 4MB\nmaintenance_work_mem = 64MB\neffective_io_concurrency = 10\nwal_level = hot_standby\nfsync = off\nmax_wal_senders = 10\nwal_keep_segments = 64\nwal_sender_timeout = 60s\nhot_standby = on\nlog_destination = 'csvlog'\nlogging_collector = on\nlog_directory = 'pg_log'\nlog_filename = 'postgresql-%Y-%m-%d.log'\nlog_truncate_on_rotation = on\nlog_rotation_age = 1d\nlog_rotation_size = 0\nlog_min_duration_statement = 1s\nlog_line_prefix = '< %m >'\nlog_statement = 'all'\nlog_timezone = 'PRC'\ndatestyle = 'iso, mdy'\ntimezone = 'PRC'\nlc_messages = 'en_US.UTF-8'\nlc_monetary = 'en_US.UTF-8'\nlc_numeric = 'en_US.UTF-8'\nlc_time = 'en_US.UTF-8'\ndefault_text_search_config = 'pg_catalog.english'" > $pg_data_dir/postgresql.conf
     #echo "unix_socket_directories = '/var/run/postgresql, /tmp'" >> $pg_data_dir/postgresql.conf
-    cp ./pg_hba.conf $pg_data_dir/ && chown postgres.postgres $pg_data_dir/pg_hba.conf
+    ## create access authentication file
+    echo "local   all             all                             trust" > $pg_data_dir/pg_hba.conf
+    read -p "please input cidr address,Examples: (192.168.1.0/24) : " cidr_address
+    echo -e "host    all             all             $cidr_address    md5" >> $pg_data_dir/pg_hba.conf
+    echo -e "host    replication     all             $cidr_address    md5" >> $pg_data_dir/pg_hba.conf
+    chown postgres.postgres $pg_data_dir/pg_hba.conf
 
     if [ ! -d $pg_sock_dir ] ; then
       mkdir -p $pg_sock_dir
@@ -153,10 +177,17 @@ elif [ "$2" = "9.5" ] ; then
     ## init db for centos-7.x
     /usr/pgsql-"$2"/bin/postgresql95-setup initdb
   
-    ## copy pg file
-    cp ./postgresql_master.conf $pg_data_dir/postgresql.conf && chown postgres.postgres $pg_data_dir/postgresql.conf
+    ## create pg file
+    echo -e "listen_addresses = '*'\nmax_connections = 100\nshared_buffers = 128MB\nwork_mem = 4MB\nmaintenance_work_mem = 64MB\neffective_io_concurrency = 10\nwal_level = hot_standby\nfsync = off\nmax_wal_senders = 10\nwal_keep_segments = 64\nwal_sender_timeout = 60s\nlog_destination = 'csvlog'\nlogging_collector = on\nlog_directory = 'pg_log'\nlog_filename = 'postgresql-%Y-%m-%d.log'\nlog_truncate_on_rotation = on\nlog_rotation_age = 1d\nlog_rotation_size = 0\nlog_min_duration_statement = 1s\nlog_line_prefix = '< %m >'\nlog_statement = 'all'\nlog_timezone = 'PRC'\ndatestyle = 'iso, mdy'\ntimezone = 'PRC'\nlc_messages = 'en_US.UTF-8'\nlc_monetary = 'en_US.UTF-8'\nlc_numeric = 'en_US.UTF-8'\nlc_time = 'en_US.UTF-8'\ndefault_text_search_config = 'pg_catalog.english'" > $pg_data_dir/postgresql.conf
+    chown postgres.postgres $pg_data_dir/postgresql.conf
     #echo "unix_socket_directories = '/var/run/postgresql, /tmp'" >> $pg_data_dir/postgresql.conf
-    cp ./pg_hba.conf /$pg_data_dir/ && chown postgres.postgres $pg_data_dir/pg_hba.conf
+    ## create access authentication file
+    echo "local   all             all                             trust" > $pg_data_dir/pg_hba.conf
+    read -p "please input cidr address,Examples: (192.168.1.0/24) : " cidr_address
+    echo -e "host    all             all             $cidr_address    md5" >> $pg_data_dir/pg_hba.conf
+    echo -e "host    replication     all             $cidr_address    md5" >> $pg_data_dir/pg_hba.conf
+    chown postgres.postgres $pg_data_dir/pg_hba.conf
+
     if [ ! -d $pg_sock_dir ] ; then
       mkdir -p $pg_sock_dir
       chown -R postgres.postgres $pg_sock_dir
@@ -172,13 +203,20 @@ elif [ "$2" = "9.5" ] ; then
   elif [ "$1" = "slave" ] ; then
     ## postgresql base backup
     echo please input psql master ip :
-    read ip
-    su - postgres -c "/usr/pgsql-"$2"/bin/pg_basebackup -D /data/pgsql/"$2"/data/ -Fp -Xs -v -P -R -h $ip -U repl -p 5432"
+    read master_ip
+    su - postgres -c "/usr/pgsql-"$2"/bin/pg_basebackup -D /data/pgsql/"$2"/data/ -Fp -Xs -v -P -R -h $master_ip -U repl -p 5432"
   
-    ## copy pg file
-    cp ./postgresql_slave.conf $pg_data_dir/postgresql.conf && chown postgres.postgres $pg_data_dir/postgresql.conf
+    ## copyte pg file
+    echo -e "listen_addresses = '*'\nmax_connections = 200\nshared_buffers = 128MB\nwork_mem = 4MB\nmaintenance_work_mem = 64MB\neffective_io_concurrency = 10\nwal_level = hot_standby\nfsync = off\nmax_wal_senders = 10\nwal_keep_segments = 64\nwal_sender_timeout = 60s\nhot_standby = on\nlog_destination = 'csvlog'\nlogging_collector = on\nlog_directory = 'pg_log'\nlog_filename = 'postgresql-%Y-%m-%d.log'\nlog_truncate_on_rotation = on\nlog_rotation_age = 1d\nlog_rotation_size = 0\nlog_min_duration_statement = 1s\nlog_line_prefix = '< %m >'\nlog_statement = 'all'\nlog_timezone = 'PRC'\ndatestyle = 'iso, mdy'\ntimezone = 'PRC'\nlc_messages = 'en_US.UTF-8'\nlc_monetary = 'en_US.UTF-8'\nlc_numeric = 'en_US.UTF-8'\nlc_time = 'en_US.UTF-8'\ndefault_text_search_config = 'pg_catalog.english'" > $pg_data_dir/postgresql.conf
+
+    chown postgres.postgres $pg_data_dir/postgresql.conf
     #echo "unix_socket_directories = '/var/run/postgresql, /tmp'" >> $pg_data_dir/postgresql.conf
-    cp ./pg_hba.conf $pg_data_dir/ && chown postgres.postgres $pg_data_dir/pg_hba.conf
+    ## create access authentication file
+    echo "local   all             all                             trust" > $pg_data_dir/pg_hba.conf
+    read -p "please input cidr address,Examples: (192.168.1.0/24) : " cidr_address
+    echo -e "host    all             all             $cidr_address    md5" >> $pg_data_dir/pg_hba.conf
+    echo -e "host    replication     all             $cidr_address    md5" >> $pg_data_dir/pg_hba.conf
+    chown postgres.postgres $pg_data_dir/pg_hba.conf
 
     if [ ! -d $pg_sock_dir ] ; then
       mkdir -p $pg_sock_dir

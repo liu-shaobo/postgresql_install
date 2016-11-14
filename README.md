@@ -1,6 +1,10 @@
 # postgresql auto install scirpt
 
+<<<<<<< HEAD
 1、安装脚本支持postgresql-9.3、9.4、9.5、9.6的PG版本；
+=======
+1、安装脚本支持postgresql-9.3、postgresql-9.4、postgresql-9.5的版本；
+>>>>>>> origin/master
 
 2、pg_6_install.sh 对应centos-6.x的版本，支持PostgreSQL主库和从库安装；
 

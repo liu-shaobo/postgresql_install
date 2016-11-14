@@ -1,8 +1,11 @@
 #!/bin/bash
 
+<<<<<<< HEAD
 # v 0.5:
 #    Add pgsql-9.6 install (2016-11-14)
 #
+=======
+>>>>>>> origin/master
 # v 0.4:
 #    Merge postgresql.conf and pg_hba.conf to pg_*_install.sh (2016-09-29)
 #
@@ -230,6 +233,7 @@ elif [ "$2" = "9.5" ] ; then
     systemctl enable postgresql-"$2"
     systemctl start postgresql-"$2"
   fi
+<<<<<<< HEAD
 
 elif [ "$2" = "9.6" ] ; then
   ## create psql repo
@@ -306,3 +310,6 @@ elif [ "$2" = "9.6" ] ; then
     systemctl start postgresql-"$2"
   fi
 fi
+=======
+fi 
+>>>>>>> origin/master

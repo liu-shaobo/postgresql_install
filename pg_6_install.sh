@@ -1,11 +1,8 @@
 #!/bin/bash
 
-<<<<<<< HEAD
 # v 0.5:
 #    Add pgsql-9.6 install (2016-11-14)
 #
-=======
->>>>>>> origin/master
 # v 0.4:
 #    Merge postgresql.conf and pg_hba.conf to pg_*_install.sh (2016-09-29)
 #
@@ -20,11 +17,7 @@
 
 if [ "$#" -ne "2" ] ; then
   echo "Usage $0 $1 $2"
-<<<<<<< HEAD
   echo "Usage pg_6_install.sh {master|slave} {9.3|9.4|9.5|9.6}"
-=======
-  echo "Usage pg_6_install.sh {master|slave} {9.3|9.4|9.5}"
->>>>>>> origin/master
   exit 1
 fi
 
@@ -234,7 +227,6 @@ elif [ "$2" = "9.5" ] ; then
     chkconfig postgresql-"$2" on
     service postgresql-"$2" start
   fi
-<<<<<<< HEAD
 
 elif [ "$2" = "9.6" ] ; then
   ## create psql repo
@@ -306,6 +298,4 @@ elif [ "$2" = "9.6" ] ; then
     chkconfig postgresql-"$2" on
     service postgresql-"$2" start
   fi
-=======
->>>>>>> origin/master
 fi
